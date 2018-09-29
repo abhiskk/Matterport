@@ -3,13 +3,16 @@
 
 
 ////////////////////////////////////////////////////////////////////////
-// Include files 
+// Include files
 ////////////////////////////////////////////////////////////////////////
 
 #include "R3Graphics/R3Graphics.h"
 #include "RGBD/RGBD.h"
 #include "fglut/fglut.h"
 #include "mp.h"
+// #include "stdafx.h"
+#include <stdlib.h>
+#include <iostream>
 
 
 
@@ -71,7 +74,7 @@ static R3Box clip_box = R3null_box;
 static R3Point center(0, 0, 0);
 
 
-// GLUT variables 
+// GLUT variables
 
 static int GLUTwindow = 0;
 static int GLUTwindow_width = 640;
@@ -186,7 +189,7 @@ ReadHouse(char *filename)
   RNTime start_time;
   start_time.Read();
 
-  // Read house file 
+  // Read house file
   if (!house->ReadAsciiFile(filename)) return 0;
 
   // Print statistics
@@ -218,12 +221,12 @@ ReadScene(char *filename)
   // Check filename
   if (!filename) return 1;
   if (!house) return 0;
-  
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
-  // Read house file 
+  // Read house file
   if (!house->ReadSceneFile(filename)) return 0;
 
   // Print statistics
@@ -282,7 +285,7 @@ ReadCategories(const char *filename)
   // Check stuff
   if (!filename) return 1;
   if (!house) return 0;
-  
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
@@ -310,7 +313,7 @@ ReadSegments(const char *filename)
   // Check stuff
   if (!filename) return 1;
   if (!house) return 0;
-  
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
@@ -338,7 +341,7 @@ ReadObjects(const char *filename)
   // Check stuff
   if (!filename) return 1;
   if (!house) return 0;
-  
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
@@ -361,19 +364,19 @@ ReadObjects(const char *filename)
 
 
 static int
-ReadConfiguration(const char *filename) 
+ReadConfiguration(const char *filename)
 {
   // Check stuff
   if (!filename) return 1;
   if (!house) return 0;
-  
+
   // Start statistics
   RNTime start_time;
   start_time.Read();
 
   // Read the configuration file
   if (!house->ReadConfigurationFile(filename)) return 0;
-  
+
   // Print statistics
   if (print_verbose) {
     printf("Read configuration from %s ...\n", filename);
@@ -403,7 +406,7 @@ WriteHouse(char *filename)
   RNTime start_time;
   start_time.Read();
 
-  // Read house file 
+  // Read house file
   if (!house->WriteAsciiFile(filename)) return 0;
 
   // Print statistics
@@ -552,7 +555,7 @@ Pick(int x, int y,
   if (hit_position) hit_position->Reset(0,0,0);
   if (hit_normal) hit_normal->Reset(0,0,0);
   if (hit_t) *hit_t = 0;
-  
+
   // Clear window
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -610,7 +613,7 @@ Pick(int x, int y,
   if (object_draw_flags[MP_SHOW_OBJECTS]) house->DrawObjects(object_draw_flags | MP_COLOR_FOR_PICK);
   if (region_draw_flags[MP_SHOW_REGIONS]) house->DrawRegions(region_draw_flags | MP_COLOR_FOR_PICK);
   if (mesh_draw_flags[MP_SHOW_MESH]) house->DrawMesh(mesh_draw_flags | MP_COLOR_FOR_PICK);
-    
+
   // Reset OpenGL stuff
   glLineWidth(1);
   glPointSize(1);
@@ -621,7 +624,7 @@ Pick(int x, int y,
   glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
   if ((rgba[0] == 0) && (rgba[1] == 0) && (rgba[2] == 0)) return 0;
 
-  // Parse hit 
+  // Parse hit
   int r = rgba[0] & 0xFF;
   int g = rgba[1] & 0xFF;
   int b = rgba[2] & 0xFF;
@@ -696,7 +699,7 @@ Pick(int x, int y,
     if (hit_region) *hit_region = house->regions.Kth(index);
     if (hit_position) *hit_position = house->regions.Kth(index)->position;
   }
-     
+
   // Return hit position
   if (hit_position && hit_position->IsZero()) {
     GLfloat depth;
@@ -712,7 +715,7 @@ Pick(int x, int y,
     R3Point position(p[0], p[1], p[2]);
     *hit_position = position;
   }
-  
+
   // Return success
   return 1;
 }
@@ -725,21 +728,44 @@ Pick(int x, int y,
 
 void GLUTStop(void)
 {
-  // Destroy window 
+  // Destroy window
   glutDestroyWindow(GLUTwindow);
 
   // Exit
   exit(0);
 }
 
+static GLubyte *pixels = NULL;
+static const GLenum FORMAT = GL_RGBA;
+static const GLuint FORMAT_NBYTES = 4;
+static unsigned int nscreenshots = 0;
+static unsigned int time_e;
 
+static void create_ppm(char *prefix, int frame_id, unsigned int width, unsigned int height,
+        unsigned int color_max, unsigned int pixel_nbytes, GLubyte *pixels) {
+    size_t i, j, k, cur;
+    enum Constants { max_filename = 256 };
+    char filename[max_filename];
+    snprintf(filename, max_filename, "%s%d.ppm", prefix, frame_id);
+    FILE *f = fopen(filename, "w");
+    fprintf(f, "P3\n%d %d\n%d\n", width, height, 255);
+    for (i = 0; i < height; i++) {
+        for (j = 0; j < width; j++) {
+            cur = pixel_nbytes * ((height - i - 1) * width + j);
+            fprintf(f, "%3d %3d %3d ", pixels[cur], pixels[cur + 1], pixels[cur + 2]);
+        }
+        fprintf(f, "\n");
+    }
+    fclose(f);
+    fflush(stdout);
+}
 
 void GLUTRedraw(void)
 {
-  // Clear window 
+  // Clear window
   glClearColor(background.R(), background.G(), background.B(), 1.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
+
   // Set backface culling
   if (show_backfacing) glDisable(GL_CULL_FACE);
   else glEnable(GL_CULL_FACE);
@@ -748,7 +774,7 @@ void GLUTRedraw(void)
   if (snap_image) {
     // Set viewport
     glViewport(0, 0, snap_image->width/2, snap_image->height/2);
-    
+
     // Set perspective transformation
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -816,7 +842,7 @@ void GLUTRedraw(void)
     glColor3d(0.4, 0.4, 0.4);
     clip_box.Outline();
   }
-  
+
   // Draw axes
   if (show_axes) {
     glDisable(GL_LIGHTING);
@@ -833,9 +859,9 @@ void GLUTRedraw(void)
     if (batch) GLUTStop();
   }
 
-  // Swap buffers 
+  // Swap buffers
   glutSwapBuffers();
-}    
+}
 
 
 
@@ -847,7 +873,7 @@ void GLUTResize(int w, int h)
   // Resize viewer viewport
   viewer->ResizeViewport(0, 0, w, h);
 
-  // Remember window size 
+  // Remember window size
   GLUTwindow_width = w;
   GLUTwindow_height = h;
 
@@ -865,7 +891,7 @@ void GLUTMotion(int x, int y)
   // Compute mouse movement
   int dx = x - GLUTmouse[0];
   int dy = y - GLUTmouse[1];
-  
+
   // Update mouse drag
   GLUTmouse_drag += dx*dx + dy*dy;
 
@@ -887,7 +913,7 @@ void GLUTMotion(int x, int y)
     if (GLUTbutton[0] || GLUTbutton[1] || GLUTbutton[2]) glutPostRedisplay();
   }
 
-  // Remember mouse position 
+  // Remember mouse position
   GLUTmouse[0] = x;
   GLUTmouse[1] = y;
 }
@@ -912,7 +938,7 @@ void GLUTMouse(int button, int state, int x, int y)
 
     // Process button clicks
     if (button == 0) {
-      // Check for double click  
+      // Check for double click
       static RNBoolean double_click = FALSE;
       static RNTime last_mouse_up_time;
       double_click = (!double_click) && (last_mouse_up_time.Elapsed() < 0.4);
@@ -950,21 +976,21 @@ void GLUTMouse(int button, int state, int x, int y)
         selected_region = region;
         selected_object = object;
         SelectImage(image);
-        
+
         // Set viewing center point
         center = position;
       }
     }
   }
-  
-  // Remember button state 
+
+  // Remember button state
   int b = (button == GLUT_LEFT_BUTTON) ? 0 : ((button == GLUT_MIDDLE_BUTTON) ? 1 : 2);
   GLUTbutton[b] = (state == GLUT_DOWN) ? 1 : 0;
 
-  // Remember modifiers 
+  // Remember modifiers
   GLUTmodifiers = glutGetModifiers();
 
-   // Remember mouse position 
+   // Remember mouse position
   GLUTmouse[0] = x;
   GLUTmouse[1] = y;
 
@@ -987,21 +1013,21 @@ void GLUTSpecial(int key, int x, int y)
       SnapImage(image);
     }
     break; }
-    
+
   case GLUT_KEY_PAGE_UP:
     if (house->images.NEntries() > 0) {
       if (++snap_image_index >= house->images.NEntries()) snap_image_index = house->images.NEntries()-1;
       SnapImage(house->images.Kth(snap_image_index));
     }
     break;
-    
+
   case GLUT_KEY_PAGE_DOWN:
     if (house->images.NEntries() > 0) {
       if (--snap_image_index < 0) snap_image_index = 0;
       SnapImage(house->images.Kth(snap_image_index));
     }
     break;
-    
+
   case GLUT_KEY_LEFT:
     clip_box[0][2] -= 0.1;
     if (clip_box[0][2] > clip_box[1][2]) clip_box[0][2] = clip_box[1][2];
@@ -1023,11 +1049,11 @@ void GLUTSpecial(int key, int x, int y)
     break;
   }
 
-  // Remember mouse position 
+  // Remember mouse position
   GLUTmouse[0] = x;
   GLUTmouse[1] = y;
 
-  // Remember modifiers 
+  // Remember modifiers
   GLUTmodifiers = glutGetModifiers();
 
   // Redraw
@@ -1043,33 +1069,33 @@ void GLUTKeyboard(unsigned char key, int x, int y)
 
   // Process keyboard button event
   switch (key) {
-  case 'A': 
+  case 'A':
   case 'a':
     show_axes = !show_axes;
     break;
 
-  case 'B': 
+  case 'B':
   case 'b':
     region_draw_flags.XOR(MP_DRAW_BBOXES);
     object_draw_flags.XOR(MP_DRAW_BBOXES);
     image_draw_flags.XOR(MP_DRAW_BBOXES);
     break;
 
-  case 'C': 
+  case 'C':
   case 'c':
     image_draw_flags.XOR(MP_SHOW_IMAGES);
     break;
-    
-  case 'E': 
-  case 'e': 
+
+  case 'E':
+  case 'e':
     region_draw_flags.XOR(MP_DRAW_EDGES);
     object_draw_flags.XOR(MP_DRAW_EDGES);
     scene_draw_flags.XOR(MP_DRAW_EDGES);
     mesh_draw_flags.XOR(MP_DRAW_EDGES);
     break;
 
-  case 'F': 
-  case 'f': 
+  case 'F':
+  case 'f':
     region_draw_flags.XOR(MP_DRAW_FACES);
     object_draw_flags.XOR(MP_DRAW_FACES);
     scene_draw_flags.XOR(MP_DRAW_FACES);
@@ -1079,45 +1105,45 @@ void GLUTKeyboard(unsigned char key, int x, int y)
   case 'H':
   case 'h':
     PrintCommands();
-    break; 
+    break;
 
-  case 'I': 
+  case 'I':
   case 'i':
     image_draw_flags.XOR(MP_DRAW_IMAGES);
     break;
 
-  case 'L': 
+  case 'L':
   case 'l':
     region_draw_flags.XOR(MP_DRAW_LABELS);
     object_draw_flags.XOR(MP_DRAW_LABELS);
     break;
 
-  case 'M': 
+  case 'M':
   case 'm':
     mesh_draw_flags.XOR(MP_SHOW_MESH);
     break;
 
-  case 'O': 
+  case 'O':
   case 'o':
     object_draw_flags.XOR(MP_SHOW_OBJECTS | MP_SHOW_SEGMENTS);
     break;
 
-  case 'P': 
+  case 'P':
   case 'p':
     panorama_draw_flags.XOR(MP_SHOW_PANORAMAS);
     break;
 
-  case 'R': 
+  case 'R':
   case 'r':
     region_draw_flags.XOR(MP_SHOW_REGIONS | MP_SHOW_SURFACES);
     break;
 
-  case 'S': 
+  case 'S':
   case 's':
     scene_draw_flags.XOR(MP_SHOW_SCENE);
     break;
 
-  case 'V': 
+  case 'V':
   case 'v':
     region_draw_flags.XOR(MP_DRAW_VERTICES);
     image_draw_flags.XOR(MP_DRAW_VERTICES);
@@ -1158,24 +1184,21 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     GLUTStop();
     break;
   }
-  
-  // Remember mouse position 
+
+  // Remember mouse position
   GLUTmouse[0] = x;
   GLUTmouse[1] = y;
 
-  // Remember modifiers 
+  // Remember modifiers
   GLUTmodifiers = glutGetModifiers();
 
   // Redraw
-  glutPostRedisplay();  
+  glutPostRedisplay();
 }
-
-
-
 
 void GLUTInit(int *argc, char **argv)
 {
-  // Open window 
+  // Open window
   glutInit(argc, argv);
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(GLUTwindow_width, GLUTwindow_height);
@@ -1200,7 +1223,7 @@ void GLUTInit(int *argc, char **argv)
   glLightfv(GL_LIGHT2, GL_DIFFUSE, light2_diffuse);
   glEnable(GL_LIGHT2);
   glEnable(GL_NORMALIZE);
-  glEnable(GL_LIGHTING); 
+  glEnable(GL_LIGHTING);
 
   // Initialize color settings
   glEnable(GL_COLOR_MATERIAL);
@@ -1209,7 +1232,7 @@ void GLUTInit(int *argc, char **argv)
   // Initialize depth testing
   glEnable(GL_DEPTH_TEST);
 
-  // Initialize GLUT callback functions 
+  // Initialize GLUT callback functions
   glutDisplayFunc(GLUTRedraw);
   glutReshapeFunc(GLUTResize);
   glutKeyboardFunc(GLUTKeyboard);
@@ -1218,42 +1241,50 @@ void GLUTInit(int *argc, char **argv)
   glutMotionFunc(GLUTMotion);
 }
 
-
+using namespace std;
 
 void GLUTMainLoop(void)
 {
   // Just checking
   if (house->bbox.IsEmpty()) return;
-  
+
   // Initialize viewing stuff
   center = house->bbox.Centroid();
   clip_box = house->bbox;
+
+  cout << "MIN " << house->bbox.XMin() << " " << house->bbox.YMin() << " " << house->bbox.ZMin() << "\n";
+  cout << "MAX " << house->bbox.XMax() << " " << house->bbox.YMax() << " " << house->bbox.ZMax() << "\n";
 
   // Setup camera view looking down the Z axis
   assert(!house->bbox.IsEmpty());
   RNLength r = house->bbox.DiagonalRadius();
   assert((r > 0.0) && RNIsFinite(r));
-  if (!initial_camera) initial_camera_origin = house->bbox.Centroid() - initial_camera_towards * (2.5 * r);
+  if (!initial_camera) {
+    initial_camera_origin = house->bbox.Centroid() - initial_camera_towards * (2.5 * r);
+    cout << "initial_camera_origin: " << initial_camera_origin.X() << " " << initial_camera_origin.Y() << "\n";
+    cout << "window: " << GLUTwindow_width << " " << GLUTwindow_height << "\n";
+  }
+  fflush(stdout);
   R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r);
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   viewer = new R3Viewer(camera, viewport);
-  
-  // Run main loop -- never returns 
+
+  // Run main loop -- never returns
   glutMainLoop();
 }
 
 
- 
+
 ////////////////////////////////////////////////////////////////////////
 // Argument parsing functions
 ////////////////////////////////////////////////////////////////////////
 
-static int 
+static int
 ParseArgs(int argc, char **argv)
 {
   // Remember if an output was specified
   RNBoolean input = FALSE;
-  
+
   // Parse arguments
   argc--; argv++;
   while (argc > 0) {
@@ -1274,9 +1305,9 @@ ParseArgs(int argc, char **argv)
         argv++; argc--; background[1] = atof(*argv);
         argv++; argc--; background[2] = atof(*argv);
       }
-      else if (!strcmp(*argv, "-window")) { 
-        argv++; argc--; GLUTwindow_width = atoi(*argv); 
-        argv++; argc--; GLUTwindow_height = atoi(*argv); 
+      else if (!strcmp(*argv, "-window")) {
+        argv++; argc--; GLUTwindow_width = atoi(*argv);
+        argv++; argc--; GLUTwindow_height = atoi(*argv);
       }
       else if (!strcmp(*argv, "-camera")) {
         RNCoord x, y, z, tx, ty, tz, ux, uy, uz;
@@ -1321,11 +1352,9 @@ ParseArgs(int argc, char **argv)
     return 0;
   }
 
-  // Return OK status 
+  // Return OK status
   return 1;
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////
 // Main function
@@ -1342,7 +1371,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "Unable to allocate house\n");
     exit(-1);
   }
-  
+
   // Read house
   if (input_house_filename) {
     if (!ReadHouse(input_house_filename)) exit(-1);
@@ -1392,9 +1421,6 @@ int main(int argc, char **argv)
     GLUTMainLoop();
   }
 
-  // Return success 
+  // Return success
   return 0;
 }
-
-
-

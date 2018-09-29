@@ -23,7 +23,7 @@ R3Camera R3default_camera(R3CoordSystem(R3Point(0,0,0),
 
 /* Public functions */
 
-int 
+int
 R3InitCamera()
 {
     /* Return success */
@@ -32,7 +32,7 @@ R3InitCamera()
 
 
 
-void 
+void
 R3StopCamera()
 {
 }
@@ -158,7 +158,7 @@ const RNAngle R3Camera::
 Yaw(void) const
 {
     // Return yaw angle
-    RNAngle angle = R3InteriorAngle(R3default_camera_up_vector, Towards()); 
+    RNAngle angle = R3InteriorAngle(R3default_camera_up_vector, Towards());
     return RN_PI_OVER_TWO - angle;
 }
 
@@ -191,14 +191,14 @@ Halfspace(RNDirection dir, RNDimension dim) const
     R3Vector normal;
     switch (dim) {
     case RN_X:
-        normal = cs.Axes().Axis(RN_X); 
+        normal = cs.Axes().Axis(RN_X);
 	if (dir == RN_LO) normal.Rotate(cs.Axes().Axis(RN_Y), xfov);
 	else normal.Rotate(cs.Axes().Axis(RN_Y), RN_PI - xfov);
 	return R3Halfspace(Origin(), normal);
         break;
 
     case RN_Y:
-        normal = cs.Axes().Axis(RN_Y); 
+        normal = cs.Axes().Axis(RN_Y);
 	if (dir == RN_LO) normal.Rotate(cs.Axes().Axis(RN_X), -yfov);
 	else normal.Rotate(cs.Axes().Axis(RN_X), yfov - RN_PI);
 	return R3Halfspace(Origin(), normal);
@@ -231,7 +231,7 @@ Perspective(void) const
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
     return R4Matrix(m);
-#else 
+#else
     // Return 4x4 perspective matrix -- derived from OpenGL Programming Guide
     RNScalar A = 1.0 / tan(xfov);
     RNScalar B = 1.0 / tan(yfov);
@@ -250,7 +250,7 @@ const RNBoolean R3Camera::
 operator==(const R3Camera& camera) const
 {
     // Return whether camera is equal
-    return (cs == camera.cs) && 
+    return (cs == camera.cs) &&
            (xfov == camera.xfov) &&
            (yfov == camera.yfov) &&
            (neardist == camera.neardist) &&
@@ -320,7 +320,7 @@ SetCoordSystem(const R3CoordSystem& cs)
 void R3Camera::
 SetOrigin(const R3Point& origin)
 {
-    // Set origin 
+    // Set origin
     cs.SetOrigin(origin);
 }
 
@@ -453,7 +453,7 @@ Transform(const R3Transformation& transformation)
     RNLength scale = zaxis.Length();
     neardist *= scale;
     fardist *= scale;
-    
+
     // Transform coordinate system
     cs.Transform(transformation);
 }
@@ -463,7 +463,7 @@ Transform(const R3Transformation& transformation)
 R3Camera& R3Camera::
 operator=(const R3Camera& camera)
 {
-    // Copy camera 
+    // Copy camera
     this->cs = camera.cs;
     this->xfov = camera.xfov;
     this->yfov = camera.yfov;
@@ -486,8 +486,14 @@ Load(RNBoolean select_mode) const
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
     }
-    gluPerspective(2.0 * RN_RAD2DEG(yfov), tan(xfov) / tan(yfov), neardist, fardist);
+
+    // akadian: code for loading viewpoints
+    // gluPerspective(1.0 * RN_RAD2DEG(yfov), tan(xfov) / tan(yfov), neardist, fardist);
+    float delta = 0.1;
+    glOrtho(-8.79364 - delta, 8.79364 + delta, -4.429775 - delta, 4.429775 + delta, neardist, fardist);
+
     glMatrixMode(GL_MODELVIEW);
+
 #elif ((RN_3D_GRFX == RN_3DR) && (RN_MATH_PRECISION == RN_FLOAT_PRECISION))
     PointFW_t loc;
     PointF_t dir, up;
@@ -535,7 +541,7 @@ Draw(void) const
 #endif
 
 #if FALSE
-    // Draw coordinate system 
+    // Draw coordinate system
     // static float cs_color[3] = { 0.0, 1.0, 0.0 };
     // R3LoadRgb(cs_color);
     cs.Draw();

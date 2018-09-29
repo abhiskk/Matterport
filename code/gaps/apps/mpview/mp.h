@@ -150,7 +150,7 @@ public:
   int label_id;
   char *label_name;
   int mpcat40_id;
-  char *mpcat40_name;  
+  char *mpcat40_name;
 };
 
 
@@ -273,7 +273,7 @@ struct MPPortal {
   void Draw(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
   void DrawSpan(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
   void DrawLabel(RNFlags draw_flags = MP_DEFAULT_DRAW_FLAGS) const;
-  
+
 
 public:
   struct MPHouse *house;
@@ -378,13 +378,13 @@ public:
   MPCategory *FindCategory(const char *label_name) const;
   MPCategory *FindCategory(int label_id) const;
   MPSegment *FindSegment(int segment_id) const;
-  
+
   // Geometric query stuff
   MPImage *FindClosestImage(const R3Point& query_position, const R3Vector& normal = R3zero_vector,
     RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visiblity = FALSE) const;
   MPVertex *FindClosestVertex(const R3Point& query_position, const R3Vector& normal = R3zero_vector,
     RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visiblity = FALSE) const;
-  MPRegion *FindClosestRegion(const R3Point& query_position, const R3Vector& normal = R3zero_vector, 
+  MPRegion *FindClosestRegion(const R3Point& query_position, const R3Vector& normal = R3zero_vector,
     RNLength max_distance = FLT_MAX, RNBoolean check_normal = FALSE, RNBoolean check_visiblity = FALSE) const;
 
 public:

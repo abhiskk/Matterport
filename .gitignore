@@ -1,0 +1,4 @@
+.DS_Store
+*.o
+code/gaps/lib
+code/gaps/bin
