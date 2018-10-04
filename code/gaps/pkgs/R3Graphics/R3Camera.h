@@ -19,16 +19,18 @@ class R3Camera {
 	R3Camera(const R3CoordSystem &cs, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist);
 	R3Camera(const R3Point& origin, const R3Triad& triad, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist);
 	R3Camera(const R3Point& origin, const R3Vector& towards, const R3Vector& up, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist);
+  R3Camera(const R3Point& origin, const R3Vector& towards, const R3Vector& up, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist,
+            RNCoord xmin, RNCoord xmax, RNCoord ymin, RNCoord ymax);
 	R3Camera(const R3Point& origin, RNAngle pitch, RNAngle yaw, RNAngle roll, RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist);
 
 	// Property functions/operators
-        const R3Point& Origin(void) const;        
-        const R3Vector Towards(void) const;        
-        const R3Vector& Backwards(void) const;        
-        const R3Vector& Up(void) const;        
-        const R3Vector Down(void) const;        
-        const R3Vector& Right(void) const;        
-        const R3Vector Left(void) const;        
+        const R3Point& Origin(void) const;
+        const R3Vector Towards(void) const;
+        const R3Vector& Backwards(void) const;
+        const R3Vector& Up(void) const;
+        const R3Vector Down(void) const;
+        const R3Vector& Right(void) const;
+        const R3Vector Left(void) const;
 	const RNAngle Pitch(void) const;
 	const RNAngle Yaw(void) const;
 	const RNAngle Roll(void) const;
@@ -51,8 +53,8 @@ class R3Camera {
         void Reorient(const R3Vector& towards, const R3Vector& up);
         void Reorient(RNAngle pitch, RNAngle yaw, RNAngle roll);
         void Mirror(const R3Plane& plane);
-        void SetCoordSystem(const R3CoordSystem& cs);        
-        void SetOrigin(const R3Point& origin);        
+        void SetCoordSystem(const R3CoordSystem& cs);
+        void SetOrigin(const R3Point& origin);
         void SetTowards(const R3Vector& towards);
         void SetBackwards(const R3Vector& backwards);
 	void SetUp(const R3Vector& up);
@@ -69,7 +71,7 @@ class R3Camera {
         void SetFar(RNLength fardist);
         void SetValue(RNScalar value);
         void SetData(void *data);
-  
+
         // More manipulation functions/operators
         void Translate(const R3Vector& translation);
         void Rotate(const R3Vector& axis, RNAngle dtheta);
@@ -336,6 +338,3 @@ Outline(void) const
     // Draw camera
     Draw();
 }
-
-
-

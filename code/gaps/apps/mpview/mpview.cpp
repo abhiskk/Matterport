@@ -13,6 +13,8 @@
 // #include "stdafx.h"
 #include <stdlib.h>
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 
 
 
@@ -33,6 +35,7 @@ static char *input_ssa_filename = NULL;
 static char *input_ssb_filename = NULL;
 static char *output_house_filename = NULL;
 static char *output_image_filename = NULL;
+static char *output_ppm_filename = NULL;
 static R3Vector initial_camera_towards(0, 0, -1);
 static R3Vector initial_camera_up(0,1,0);
 static R3Point initial_camera_origin(0,0,0);
@@ -40,6 +43,8 @@ static RNBoolean initial_camera = FALSE;
 static RNRgb background(0,0,0);
 static int print_verbose = 0;
 static int batch = 0;
+static int ind_level = -1;
+static char *z_clip = NULL;
 
 
 // Application variables
@@ -56,12 +61,12 @@ static int snap_image_index = -1;
 // Draw flag variables
 
 static RNFlags level_draw_flags = MP_DRAW_DEPICTIONS;
-static RNFlags region_draw_flags = MP_DRAW_FACES | MP_DRAW_DEPICTIONS;
-static RNFlags object_draw_flags = MP_SHOW_OBJECTS | MP_SHOW_SEGMENTS | MP_DRAW_BBOXES;
-static RNFlags image_draw_flags = MP_DRAW_DEPICTIONS;
+static RNFlags region_draw_flags = MP_DRAW_DEPICTIONS | MP_DRAW_BBOXES;
+static RNFlags object_draw_flags = MP_SHOW_OBJECTS | MP_SHOW_SEGMENTS | MP_DRAW_FACES;
+static RNFlags image_draw_flags = MP_DRAW_DEPICTIONS | MP_DRAW_BBOXES;
 static RNFlags panorama_draw_flags = MP_DRAW_DEPICTIONS;
-static RNFlags mesh_draw_flags = MP_DRAW_VERTICES;
-static RNFlags scene_draw_flags = MP_SHOW_SCENE | MP_DRAW_FACES;
+static RNFlags mesh_draw_flags = MP_DRAW_VERTICES | MP_DRAW_FACES;
+static RNFlags scene_draw_flags = MP_SHOW_SCENE;
 static RNFlags color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL;
 
 
@@ -738,15 +743,16 @@ void GLUTStop(void)
 static GLubyte *pixels = NULL;
 static const GLenum FORMAT = GL_RGBA;
 static const GLuint FORMAT_NBYTES = 4;
-static unsigned int nscreenshots = 0;
-static unsigned int time_e;
+static int FRAME_COUNT = 0;
 
-static void create_ppm(char *prefix, int frame_id, unsigned int width, unsigned int height,
+static void create_ppm(char *ppm_filename, unsigned int width, unsigned int height,
         unsigned int color_max, unsigned int pixel_nbytes, GLubyte *pixels) {
-    size_t i, j, k, cur;
+    size_t i, j, cur;
     enum Constants { max_filename = 256 };
     char filename[max_filename];
-    snprintf(filename, max_filename, "%s%d.ppm", prefix, frame_id);
+    snprintf(filename, max_filename, "%s.%d.ppm", ppm_filename, FRAME_COUNT);
+    FRAME_COUNT++;
+    fflush(stdout);
     FILE *f = fopen(filename, "w");
     fprintf(f, "P3\n%d %d\n%d\n", width, height, 255);
     for (i = 0; i < height; i++) {
@@ -861,6 +867,12 @@ void GLUTRedraw(void)
 
   // Swap buffers
   glutSwapBuffers();
+
+  if (output_ppm_filename) {
+    // pixels = (GLubyte *)malloc(FORMAT_NBYTES * GLUTwindow_width * GLUTwindow_height);
+    // glReadPixels(0, 0, GLUTwindow_width, GLUTwindow_height, FORMAT, GL_UNSIGNED_BYTE, pixels);
+    // create_ppm(output_ppm_filename, GLUTwindow_width, GLUTwindow_height, 255, FORMAT_NBYTES, pixels);
+  }
 }
 
 
@@ -1157,18 +1169,30 @@ void GLUTKeyboard(unsigned char key, int x, int y)
     break;
 
   case ' ':
-    if (color_scheme == MP_COLOR_BY_RGB)
+    if (color_scheme == MP_COLOR_BY_RGB) {
+      printf("Coloring by object and label\n");
       color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL;
-    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL))
+    }
+    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_LABEL)) {
+      printf("Coloring by object and index\n");
       color_scheme = MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX;
-    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX))
+    }
+    else if (color_scheme == (MP_COLOR_BY_OBJECT | MP_COLOR_BY_INDEX)) {
+      printf("Coloring by region and label\n");
       color_scheme = MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL;
-    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL))
+    }
+    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_LABEL)) {
+      printf("Coloring by region and index\n");
       color_scheme = MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX;
-    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX))
+    }
+    else if (color_scheme == (MP_COLOR_BY_REGION | MP_COLOR_BY_INDEX)) {
+      printf("Coloring by level and index\n");
       color_scheme = MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX;
-    else if (color_scheme == (MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX))
+    }
+    else if (color_scheme == (MP_COLOR_BY_LEVEL | MP_COLOR_BY_INDEX)) {
+      printf("Coloring by rgb\n");
       color_scheme = MP_COLOR_BY_RGB;
+    }
     break;
 
   case 27: // ESC
@@ -1251,9 +1275,37 @@ void GLUTMainLoop(void)
   // Initialize viewing stuff
   center = house->bbox.Centroid();
   clip_box = house->bbox;
+  ifstream zclip_infile;
+  zclip_infile.open(z_clip);
+  if (!zclip_infile) {
+    printf("Unable to open zclip file\n");
+    exit(1);
+  }
+  std::vector<double> z_heights;
+  for (int i = 0; i < house->levels.NEntries(); i++) {
+    int t;
+    double lo, hi;
+    zclip_infile >> t;
+    zclip_infile >> lo;
+    zclip_infile >> hi;
+    z_heights.push_back(lo);
+  }
 
-  cout << "MIN " << house->bbox.XMin() << " " << house->bbox.YMin() << " " << house->bbox.ZMin() << "\n";
-  cout << "MAX " << house->bbox.XMax() << " " << house->bbox.YMax() << " " << house->bbox.ZMax() << "\n";
+  // printf("CLIP BOX BEFORE: %lf %lf", clip_box[0][2], clip_box[1][2]);
+
+  clip_box[0][2] = z_heights[ind_level];
+  if (ind_level + 1 < house->levels.NEntries())
+    clip_box[1][2] = z_heights[ind_level + 1];
+
+  // reduce height to remove ceiling objects
+  clip_box[1][2] -= 1.5;
+
+  // printf("CLIP BOX AFTER: %lf %lf", clip_box[0][2], clip_box[1][2]);
+
+  // for (int ind = 0; ind < 4; ind++) {
+  //   printf("level %d zheight: %f\n", ind, house->levels.Kth(ind)->bbox[1][2] - house->levels.Kth(ind)->bbox[0][2]);
+  // }
+  // printf("house->bbox zheight: %f\n", house->bbox[1][2] - house->bbox[0][2]);
 
   // Setup camera view looking down the Z axis
   assert(!house->bbox.IsEmpty());
@@ -1261,11 +1313,17 @@ void GLUTMainLoop(void)
   assert((r > 0.0) && RNIsFinite(r));
   if (!initial_camera) {
     initial_camera_origin = house->bbox.Centroid() - initial_camera_towards * (2.5 * r);
-    cout << "initial_camera_origin: " << initial_camera_origin.X() << " " << initial_camera_origin.Y() << "\n";
-    cout << "window: " << GLUTwindow_width << " " << GLUTwindow_height << "\n";
   }
   fflush(stdout);
-  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r);
+
+  // R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r);
+
+  assert(ind_level >= 0 && ind_level < house->levels.NEntries());
+
+  R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r,
+                    house->levels.Kth(ind_level)->bbox[0][0], house->levels.Kth(ind_level)->bbox[1][0],
+                    house->levels.Kth(ind_level)->bbox[0][1], house->levels.Kth(ind_level)->bbox[1][1]);
+
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   viewer = new R3Viewer(camera, viewport);
 
@@ -1293,6 +1351,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-batch")) batch = 1;
       else if (!strcmp(*argv, "-output_house")) { argc--; argv++; output_house_filename = *argv; }
       else if (!strcmp(*argv, "-output_image")) { argc--; argv++; output_image_filename = *argv; }
+      else if (!strcmp(*argv, "-output_ppm")) { argc--; argv++; output_ppm_filename = *argv; }
       else if (!strcmp(*argv, "-input_house")) { argc--; argv++; input_house_filename = *argv; input = TRUE; }
       else if (!strcmp(*argv, "-input_scene")) { argc--; argv++; input_scene_filename = *argv; input = TRUE; }
       else if (!strcmp(*argv, "-input_mesh")) { argc--; argv++; input_mesh_filename = *argv; input = TRUE; }
@@ -1300,6 +1359,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-input_segments")) { argc--; argv++; input_segments_filename = *argv; }
       else if (!strcmp(*argv, "-input_objects")) { argc--; argv++; input_objects_filename = *argv; }
       else if (!strcmp(*argv, "-input_configuration")) { argc--; argv++; input_configuration_filename = *argv; input = TRUE; }
+      else if (!strcmp(*argv, "-level")) { argc--; argv++; ind_level = atoi(*argv); }
+      else if (!strcmp(*argv, "-z-clip")) { argc--; argv++; z_clip = *argv; }
       else if (!strcmp(*argv, "-background")) {
         argv++; argc--; background[0] = atof(*argv);
         argv++; argc--; background[1] = atof(*argv);

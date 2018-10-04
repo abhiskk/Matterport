@@ -18,6 +18,7 @@ R3Vector R3default_camera_up_vector(0.0, 0.0, 1.0);
 R3Camera R3default_camera(R3CoordSystem(R3Point(0,0,0),
     R3Triad(R3default_camera_towards_vector, R3default_camera_up_vector)),
     R3default_camera_xfov, R3default_camera_yfov, 0.001, 1000.0);
+RNCoord XMin, XMax, YMin, YMax;
 
 
 
@@ -108,6 +109,27 @@ R3Camera(const R3Point& origin, const R3Vector& towards, const R3Vector& up,
       value(0),
       data(NULL)
 {
+}
+
+
+
+R3Camera::
+R3Camera(const R3Point& origin, const R3Vector& towards, const R3Vector& up,
+		  RNAngle xfov, RNAngle yfov, RNLength neardist, RNLength fardist,
+      RNCoord xmin, RNCoord xmax, RNCoord ymin, RNCoord ymax)
+    : cs(origin, R3Triad(towards, up)),
+      xfov(xfov),
+      yfov(yfov),
+      neardist(neardist),
+      fardist(fardist),
+      value(0),
+      data(NULL)
+{
+  XMin = xmin;
+  XMax = xmax;
+  YMin = ymin;
+  YMax = ymax;
+  fflush(stdout);
 }
 
 
@@ -489,8 +511,12 @@ Load(RNBoolean select_mode) const
 
     // akadian: code for loading viewpoints
     // gluPerspective(1.0 * RN_RAD2DEG(yfov), tan(xfov) / tan(yfov), neardist, fardist);
-    float delta = 0.1;
-    glOrtho(-8.79364 - delta, 8.79364 + delta, -4.429775 - delta, 4.429775 + delta, neardist, fardist);
+    // float delta = 1e-3;
+    float delta = 0.5;
+    RNCoord dx = ((XMax - XMin) / 2.0) + delta;
+    RNCoord dy = ((YMax - YMin) / 2.0) + delta;
+    glOrtho(-dx, dx, -dy, dy, neardist, fardist);
+    fflush(stdout);
 
     glMatrixMode(GL_MODELVIEW);
 
