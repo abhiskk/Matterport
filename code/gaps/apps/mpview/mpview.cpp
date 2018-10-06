@@ -44,7 +44,7 @@ static RNRgb background(0,0,0);
 static int print_verbose = 0;
 static int batch = 0;
 static int ind_level = -1;
-static char *z_clip = NULL;
+static char *zclip = NULL;
 
 
 // Application variables
@@ -869,9 +869,9 @@ void GLUTRedraw(void)
   glutSwapBuffers();
 
   if (output_ppm_filename) {
-    // pixels = (GLubyte *)malloc(FORMAT_NBYTES * GLUTwindow_width * GLUTwindow_height);
-    // glReadPixels(0, 0, GLUTwindow_width, GLUTwindow_height, FORMAT, GL_UNSIGNED_BYTE, pixels);
-    // create_ppm(output_ppm_filename, GLUTwindow_width, GLUTwindow_height, 255, FORMAT_NBYTES, pixels);
+    pixels = (GLubyte *)malloc(FORMAT_NBYTES * GLUTwindow_width * GLUTwindow_height);
+    glReadPixels(0, 0, GLUTwindow_width, GLUTwindow_height, FORMAT, GL_UNSIGNED_BYTE, pixels);
+    create_ppm(output_ppm_filename, GLUTwindow_width, GLUTwindow_height, 255, FORMAT_NBYTES, pixels);
   }
 }
 
@@ -1247,7 +1247,7 @@ void GLUTInit(int *argc, char **argv)
   glLightfv(GL_LIGHT2, GL_DIFFUSE, light2_diffuse);
   glEnable(GL_LIGHT2);
   glEnable(GL_NORMALIZE);
-  glEnable(GL_LIGHTING);
+  glDisable(GL_LIGHTING);
 
   // Initialize color settings
   glEnable(GL_COLOR_MATERIAL);
@@ -1275,37 +1275,31 @@ void GLUTMainLoop(void)
   // Initialize viewing stuff
   center = house->bbox.Centroid();
   clip_box = house->bbox;
-  ifstream zclip_infile;
-  zclip_infile.open(z_clip);
-  if (!zclip_infile) {
-    printf("Unable to open zclip file\n");
-    exit(1);
+
+  if (zclip) {
+    ifstream zclip_infile;
+    zclip_infile.open(zclip);
+    if (!zclip_infile) {
+      printf("Unable to open zclip file\n");
+      exit(1);
+    }
+    std::vector<double> z_heights;
+    for (int i = 0; i < house->levels.NEntries(); i++) {
+      int t;
+      double lo, hi;
+      zclip_infile >> t;
+      zclip_infile >> lo;
+      zclip_infile >> hi;
+      z_heights.push_back(lo);
+    }
+
+    clip_box[0][2] = z_heights[ind_level];
+    if (ind_level + 1 < house->levels.NEntries())
+      clip_box[1][2] = z_heights[ind_level + 1];
+
+    // reduce height to remove ceiling objects
+    clip_box[1][2] -= 1.5;
   }
-  std::vector<double> z_heights;
-  for (int i = 0; i < house->levels.NEntries(); i++) {
-    int t;
-    double lo, hi;
-    zclip_infile >> t;
-    zclip_infile >> lo;
-    zclip_infile >> hi;
-    z_heights.push_back(lo);
-  }
-
-  // printf("CLIP BOX BEFORE: %lf %lf", clip_box[0][2], clip_box[1][2]);
-
-  clip_box[0][2] = z_heights[ind_level];
-  if (ind_level + 1 < house->levels.NEntries())
-    clip_box[1][2] = z_heights[ind_level + 1];
-
-  // reduce height to remove ceiling objects
-  clip_box[1][2] -= 1.5;
-
-  // printf("CLIP BOX AFTER: %lf %lf", clip_box[0][2], clip_box[1][2]);
-
-  // for (int ind = 0; ind < 4; ind++) {
-  //   printf("level %d zheight: %f\n", ind, house->levels.Kth(ind)->bbox[1][2] - house->levels.Kth(ind)->bbox[0][2]);
-  // }
-  // printf("house->bbox zheight: %f\n", house->bbox[1][2] - house->bbox[0][2]);
 
   // Setup camera view looking down the Z axis
   assert(!house->bbox.IsEmpty());
@@ -1360,7 +1354,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-input_objects")) { argc--; argv++; input_objects_filename = *argv; }
       else if (!strcmp(*argv, "-input_configuration")) { argc--; argv++; input_configuration_filename = *argv; input = TRUE; }
       else if (!strcmp(*argv, "-level")) { argc--; argv++; ind_level = atoi(*argv); }
-      else if (!strcmp(*argv, "-z-clip")) { argc--; argv++; z_clip = *argv; }
+      else if (!strcmp(*argv, "-z-clip")) { argc--; argv++; zclip = *argv; }
       else if (!strcmp(*argv, "-background")) {
         argv++; argc--; background[0] = atof(*argv);
         argv++; argc--; background[1] = atof(*argv);

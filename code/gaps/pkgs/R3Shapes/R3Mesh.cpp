@@ -2839,7 +2839,7 @@ DrawVertexIDs(void) const
     glColor3ub(r, g, b);
     DrawVertex(vertices[i]);
   }
-  glEnable(GL_LIGHTING);
+  glDisable(GL_LIGHTING);
 }
 
 
@@ -2857,7 +2857,7 @@ DrawEdgeIDs(void) const
     glColor3ub(r, g, b);
     DrawEdge(edges[i]);
   }
-  glEnable(GL_LIGHTING);
+  glDisable(GL_LIGHTING);
 }
 
 
@@ -2875,7 +2875,7 @@ DrawFaceIDs(void) const
     glColor3ub(r, g, b);
     DrawFace(faces[i]);
   }
-  glEnable(GL_LIGHTING);
+  glDisable(GL_LIGHTING);
 }
 
 

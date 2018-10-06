@@ -683,7 +683,7 @@ DrawPoints(int color_scheme, int skip) const
   if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-    glEnable(GL_LIGHTING);
+    glDisable(GL_LIGHTING);
   }
 
   // Draw color
@@ -747,7 +747,7 @@ DrawQuads(int color_scheme, int skip) const
   if (color_scheme == RGBD_RENDER_COLOR_SCHEME) {
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-    glEnable(GL_LIGHTING);
+    glDisable(GL_LIGHTING);
   }
 
   // Draw color
