@@ -511,7 +511,6 @@ Load(RNBoolean select_mode) const
 
     // akadian: code for loading viewpoints
     // gluPerspective(1.0 * RN_RAD2DEG(yfov), tan(xfov) / tan(yfov), neardist, fardist);
-    // float delta = 1e-3;
     float delta = 0.5;
     RNCoord dx = ((XMax - XMin) / 2.0) + delta;
     RNCoord dy = ((YMax - YMin) / 2.0) + delta;
