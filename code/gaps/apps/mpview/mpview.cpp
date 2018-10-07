@@ -873,6 +873,7 @@ void GLUTRedraw(void)
     glReadPixels(0, 0, GLUTwindow_width, GLUTwindow_height, FORMAT, GL_UNSIGNED_BYTE, pixels);
     create_ppm(output_ppm_filename, GLUTwindow_width, GLUTwindow_height, 255, FORMAT_NBYTES, pixels);
   }
+  exit(1);
 }
 
 
@@ -1277,6 +1278,7 @@ void GLUTMainLoop(void)
   clip_box = house->bbox;
 
   if (zclip) {
+    printf("ZCLIPPING");
     ifstream zclip_infile;
     zclip_infile.open(zclip);
     if (!zclip_infile) {
@@ -1310,13 +1312,13 @@ void GLUTMainLoop(void)
   }
   fflush(stdout);
 
-  // R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r);
-
   assert(ind_level >= 0 && ind_level < house->levels.NEntries());
 
+  // R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r,
+  //                   house->levels.Kth(ind_level)->bbox[0][0], house->levels.Kth(ind_level)->bbox[1][0],
+  //                   house->levels.Kth(ind_level)->bbox[0][1], house->levels.Kth(ind_level)->bbox[1][1]);
   R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r,
-                    house->levels.Kth(ind_level)->bbox[0][0], house->levels.Kth(ind_level)->bbox[1][0],
-                    house->levels.Kth(ind_level)->bbox[0][1], house->levels.Kth(ind_level)->bbox[1][1]);
+                    house->bbox.XMin(), house->bbox.XMax(), house->bbox.YMin(), house->bbox.YMax());
 
   R2Viewport viewport(0, 0, GLUTwindow_width, GLUTwindow_height);
   viewer = new R3Viewer(camera, viewport);
@@ -1354,7 +1356,7 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-input_objects")) { argc--; argv++; input_objects_filename = *argv; }
       else if (!strcmp(*argv, "-input_configuration")) { argc--; argv++; input_configuration_filename = *argv; input = TRUE; }
       else if (!strcmp(*argv, "-level")) { argc--; argv++; ind_level = atoi(*argv); }
-      else if (!strcmp(*argv, "-z-clip")) { argc--; argv++; zclip = *argv; }
+      else if (!strcmp(*argv, "-zclip")) { argc--; argv++; zclip = *argv; }
       else if (!strcmp(*argv, "-background")) {
         argv++; argc--; background[0] = atof(*argv);
         argv++; argc--; background[1] = atof(*argv);
