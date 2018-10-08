@@ -62,7 +62,10 @@ def z_levels(input_house):
         los[ind_level] = u
         his[ind_level] = v
     levels = sorted(list(los.keys()))
-    return levels
+    res = dict()
+    for l in levels:
+        res[l] = (los[l], his[l])
+    return res
 
 
 def main():
@@ -88,8 +91,8 @@ def main():
                 lines.append("WIDTH={}\n".format(w))
                 lines.append("HEIGHT={}\n".format(h))
                 lines.append("LEVEL={}\n".format(lev))
-                lines.append("ZCLIP_LOW={:.6f}".format(z_clips[lev][0]))
-                lines.append("ZCLIP_HIGH={:.6f}".format(z_clips[lev][1]))
+                lines.append("ZCLIP_LOW={:.6f}\n".format(z_clips[lev][0] - 0.1))
+                lines.append("ZCLIP_HIGH={:.6f}\n".format(z_clips[lev][0] + 1.5))
                 lines.append("echo Running house {}\n".format(hid))
                 f.writelines(lines)
                 f.write(RUN_COMMAND)
