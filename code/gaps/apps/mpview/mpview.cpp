@@ -44,7 +44,9 @@ static RNRgb background(0,0,0);
 static int print_verbose = 0;
 static int batch = 0;
 static int ind_level = -1;
-static char *zclip = NULL;
+static bool zclip = FALSE;
+static double zclip_low = -1;
+static double zclip_high = -1;
 
 
 // Application variables
@@ -873,7 +875,7 @@ void GLUTRedraw(void)
     glReadPixels(0, 0, GLUTwindow_width, GLUTwindow_height, FORMAT, GL_UNSIGNED_BYTE, pixels);
     create_ppm(output_ppm_filename, GLUTwindow_width, GLUTwindow_height, 255, FORMAT_NBYTES, pixels);
   }
-  exit(1);
+  // exit(1);
 }
 
 
@@ -1278,29 +1280,10 @@ void GLUTMainLoop(void)
   clip_box = house->bbox;
 
   if (zclip) {
-    printf("ZCLIPPING");
-    ifstream zclip_infile;
-    zclip_infile.open(zclip);
-    if (!zclip_infile) {
-      printf("Unable to open zclip file\n");
-      exit(1);
-    }
-    std::vector<double> z_heights;
-    for (int i = 0; i < house->levels.NEntries(); i++) {
-      int t;
-      double lo, hi;
-      zclip_infile >> t;
-      zclip_infile >> lo;
-      zclip_infile >> hi;
-      z_heights.push_back(lo);
-    }
-
-    clip_box[0][2] = z_heights[ind_level];
-    if (ind_level + 1 < house->levels.NEntries())
-      clip_box[1][2] = z_heights[ind_level + 1];
-
-    // reduce height to remove ceiling objects
-    clip_box[1][2] -= 1.5;
+    printf("ZCLIPPING\n");
+    assert(zclip_low <= zclip_high);
+    clip_box[0][2] = zclip_low;
+    clip_box[1][2] = zclip_high;
   }
 
   // Setup camera view looking down the Z axis
@@ -1312,11 +1295,6 @@ void GLUTMainLoop(void)
   }
   fflush(stdout);
 
-  assert(ind_level >= 0 && ind_level < house->levels.NEntries());
-
-  // R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r,
-  //                   house->levels.Kth(ind_level)->bbox[0][0], house->levels.Kth(ind_level)->bbox[1][0],
-  //                   house->levels.Kth(ind_level)->bbox[0][1], house->levels.Kth(ind_level)->bbox[1][1]);
   R3Camera camera(initial_camera_origin, initial_camera_towards, initial_camera_up, 0.54, 0.45, 0.01 * r, 100.0 * r,
                     house->bbox.XMin(), house->bbox.XMax(), house->bbox.YMin(), house->bbox.YMax());
 
@@ -1356,7 +1334,8 @@ ParseArgs(int argc, char **argv)
       else if (!strcmp(*argv, "-input_objects")) { argc--; argv++; input_objects_filename = *argv; }
       else if (!strcmp(*argv, "-input_configuration")) { argc--; argv++; input_configuration_filename = *argv; input = TRUE; }
       else if (!strcmp(*argv, "-level")) { argc--; argv++; ind_level = atoi(*argv); }
-      else if (!strcmp(*argv, "-zclip")) { argc--; argv++; zclip = *argv; }
+      else if (!strcmp(*argv, "-zclip_low")) { argc--; argv++; zclip_low = atof(*argv); zclip = TRUE; }
+      else if (!strcmp(*argv, "-zclip_high")) { argc--; argv++; zclip_high = atof(*argv); zclip = TRUE; }
       else if (!strcmp(*argv, "-background")) {
         argv++; argc--; background[0] = atof(*argv);
         argv++; argc--; background[1] = atof(*argv);
