@@ -12,6 +12,7 @@
 #include "fglut/fglut.h"
 #include "RGBD/RGBD.h"
 #include "mp.h"
+#include <set>
 
 
 
@@ -19,7 +20,7 @@
 // UTILITY DRAWING FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
 
-static void 
+static void
 DrawText(const R3Point& p, const char *s)
 {
   // Draw text string s and position p
@@ -30,7 +31,7 @@ DrawText(const R3Point& p, const char *s)
 
 
 #if 0
-static void 
+static void
 DrawText(const R3Point& p, RNScalar value)
 {
   // Draw text string s and position p
@@ -67,29 +68,29 @@ LoadColor(int k)
   // Make array of colors
   const int ncolors = 72;
   const RNRgb colors[ncolors] = {
-    RNRgb(0.5, 0.5, 0.5), RNRgb(1, 0, 0), RNRgb(0, 0, 1), 
-    RNRgb(0, 1, 0), RNRgb(0, 1, 1), RNRgb(1, 0, 1), 
-    RNRgb(1, 0.5, 0), RNRgb(0, 1, 0.5), RNRgb(0.5, 0, 1), 
-    RNRgb(0.5, 1, 0), RNRgb(0, 0.5, 1), RNRgb(1, 0, 0.5), 
-    RNRgb(0.5, 0, 0), RNRgb(0, 0.5, 0), RNRgb(0, 0, 0.5), 
+    RNRgb(0.5, 0.5, 0.5), RNRgb(1, 0, 0), RNRgb(0, 0, 1),
+    RNRgb(0, 1, 0), RNRgb(0, 1, 1), RNRgb(1, 0, 1),
+    RNRgb(1, 0.5, 0), RNRgb(0, 1, 0.5), RNRgb(0.5, 0, 1),
+    RNRgb(0.5, 1, 0), RNRgb(0, 0.5, 1), RNRgb(1, 0, 0.5),
+    RNRgb(0.5, 0, 0), RNRgb(0, 0.5, 0), RNRgb(0, 0, 0.5),
     RNRgb(0.5, 0.5, 0), RNRgb(0, 0.5, 0.5), RNRgb(0.5, 0, 0.5),
-    RNRgb(0.7, 0, 0), RNRgb(0, 0.7, 0), RNRgb(0, 0, 0.7), 
-    RNRgb(0.7, 0.7, 0), RNRgb(0, 0.7, 0.7), RNRgb(0.7, 0, 0.7), 
-    RNRgb(0.7, 0.3, 0), RNRgb(0, 0.7, 0.3), RNRgb(0.3, 0, 0.7), 
-    RNRgb(0.3, 0.7, 0), RNRgb(0, 0.3, 0.7), RNRgb(0.7, 0, 0.3), 
-    RNRgb(0.3, 0, 0), RNRgb(0, 0.3, 0), RNRgb(0, 0, 0.3), 
+    RNRgb(0.7, 0, 0), RNRgb(0, 0.7, 0), RNRgb(0, 0, 0.7),
+    RNRgb(0.7, 0.7, 0), RNRgb(0, 0.7, 0.7), RNRgb(0.7, 0, 0.7),
+    RNRgb(0.7, 0.3, 0), RNRgb(0, 0.7, 0.3), RNRgb(0.3, 0, 0.7),
+    RNRgb(0.3, 0.7, 0), RNRgb(0, 0.3, 0.7), RNRgb(0.7, 0, 0.3),
+    RNRgb(0.3, 0, 0), RNRgb(0, 0.3, 0), RNRgb(0, 0, 0.3),
     RNRgb(0.3, 0.3, 0), RNRgb(0, 0.3, 0.3), RNRgb(0.3, 0, 0.3),
-    RNRgb(1, 0.3, 0.3), RNRgb(0.3, 1, 0.3), RNRgb(0.3, 0.3, 1), 
-    RNRgb(1, 1, 0.3), RNRgb(0.3, 1, 1), RNRgb(1, 0.3, 1), 
-    RNRgb(1, 0.5, 0.3), RNRgb(0.3, 1, 0.5), RNRgb(0.5, 0.3, 1), 
-    RNRgb(0.5, 1, 0.3), RNRgb(0.3, 0.5, 1), RNRgb(1, 0.3, 0.5), 
-    RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), RNRgb(0.3, 0.3, 0.5), 
+    RNRgb(1, 0.3, 0.3), RNRgb(0.3, 1, 0.3), RNRgb(0.3, 0.3, 1),
+    RNRgb(1, 1, 0.3), RNRgb(0.3, 1, 1), RNRgb(1, 0.3, 1),
+    RNRgb(1, 0.5, 0.3), RNRgb(0.3, 1, 0.5), RNRgb(0.5, 0.3, 1),
+    RNRgb(0.5, 1, 0.3), RNRgb(0.3, 0.5, 1), RNRgb(1, 0.3, 0.5),
+    RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), RNRgb(0.3, 0.3, 0.5),
     RNRgb(0.5, 0.5, 0.3), RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5),
-    RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5), RNRgb(0.5, 0.5, 0.3), 
-    RNRgb(0.3, 0.3, 0.5), RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3), 
-    RNRgb(0.3, 0.8, 0.5), RNRgb(0.5, 0.3, 0.8), RNRgb(0.8, 0.5, 0.3), 
-    RNRgb(0.8, 0.3, 0.5), RNRgb(0.5, 0.8, 0.3), RNRgb(0.3, 0.5, 0.8), 
-    RNRgb(0.8, 0.5, 0.5), RNRgb(0.5, 0.8, 0.5), RNRgb(0.5, 0.5, 0.8), 
+    RNRgb(0.3, 0.5, 0.5), RNRgb(0.5, 0.3, 0.5), RNRgb(0.5, 0.5, 0.3),
+    RNRgb(0.3, 0.3, 0.5), RNRgb(0.5, 0.3, 0.3), RNRgb(0.3, 0.5, 0.3),
+    RNRgb(0.3, 0.8, 0.5), RNRgb(0.5, 0.3, 0.8), RNRgb(0.8, 0.5, 0.3),
+    RNRgb(0.8, 0.3, 0.5), RNRgb(0.5, 0.8, 0.3), RNRgb(0.3, 0.5, 0.8),
+    RNRgb(0.8, 0.5, 0.5), RNRgb(0.5, 0.8, 0.5), RNRgb(0.5, 0.5, 0.8),
     RNRgb(0.8, 0.8, 0.5), RNRgb(0.5, 0.8, 0.8), RNRgb(0.8, 0.5, 0.8)
   };
 
@@ -109,7 +110,7 @@ LoadColor(const char *s)
 }
 
 
-    
+
 ////////////////////////////////////////////////////////////////////////
 // IMAGE MEMBER FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
@@ -256,7 +257,7 @@ MPPanorama::
 {
   // Remove all images
   while (!images.IsEmpty()) RemoveImage(images.Tail());
-  
+
   // Remove from region and house
   if (region) region->RemovePanorama(this);
   if (house) house->RemovePanorama(this);
@@ -324,7 +325,7 @@ DrawPosition(RNFlags draw_flags) const
 }
 
 
-  
+
 void MPPanorama::
 DrawName(RNFlags draw_flags) const
 {
@@ -336,7 +337,7 @@ DrawName(RNFlags draw_flags) const
 }
 
 
-  
+
 void MPPanorama::
 DrawImages(RNFlags draw_flags) const
 {
@@ -378,11 +379,19 @@ MPSegment::
   if (house) house->RemoveSegment(this);
 }
 
+std::string init_hidden_categories[] = {
+  "beam", "ceiling"
+};
 
+std::set<std::string> hidden_categories(init_hidden_categories, init_hidden_categories + 2);
 
 void MPSegment::
 Draw(RNFlags draw_flags) const
 {
+  if (object->category && hidden_categories.find(object->category->mpcat40_name) != hidden_categories.end()) {
+    return;
+  }
+
   // Set the color
   if ((draw_flags & MP_COLOR_BY_LABEL) && (draw_flags & MP_COLOR_BY_OBJECT) && object && object->category)
     LoadColor(object->category->mpcat40_id);
@@ -501,7 +510,7 @@ MPObject::
 {
   // Remove all segments
   while (!segments.IsEmpty()) RemoveSegment(segments.Tail());
-  
+
   // Remove from category, region and house
   if (category) category->RemoveObject(this);
   if (region) region->RemoveObject(this);
@@ -584,7 +593,7 @@ DrawLabel(RNFlags draw_flags) const
 }
 
 
-  
+
 void MPObject::
 DrawSegments(RNFlags draw_flags) const
 {
@@ -620,7 +629,7 @@ MPCategory::
 {
   // Remove all objects
   while (!objects.IsEmpty()) RemoveObject(objects.Tail());
-  
+
   // Remove from house
   if (house) house->RemoveCategory(this);
 }
@@ -942,7 +951,7 @@ FloorPolygon(void) const
   for (int i = 0; i < surfaces.NEntries(); i++) {
     MPSurface *surface = surfaces.Kth(i);
     if (surface->normal.Z() < 0.9) continue;
-    for (int j = 0; j < surface->vertices.NEntries(); j++) 
+    for (int j = 0; j < surface->vertices.NEntries(); j++)
       points.Insert((R2Point *) &(surface->vertices[j]->position));
     return R2Polygon(points);
   }
@@ -1059,7 +1068,7 @@ RemovePortal(MPPortal *portal)
   if (portal->regions[0] == this) index = 0;
   else if (portal->regions[1] == this) index = 1;
   else RNAbort("portal not in region");
-  
+
   // Remove portal
   MPPortal *tail = portals.Tail();
   tail->region_indices[index] = portal->region_indices[index];
@@ -1111,7 +1120,7 @@ DrawPosition(RNFlags draw_flags) const
 }
 
 
- 
+
 void MPRegion::
 DrawBBox(RNFlags draw_flags) const
 {
@@ -1133,7 +1142,7 @@ DrawLabel(RNFlags draw_flags) const
 }
 
 
-  
+
 void MPRegion::
 DrawPanoramas(RNFlags draw_flags) const
 {
@@ -1194,7 +1203,7 @@ RecomputeBBox(RNBoolean preserve_zmax)
     MPSurface *surface = surfaces.Kth(i);
     bbox.Union(surface->bbox);
   }
-  
+
   // Restore zextent
   if (preserve_zmax) bbox[1][2] = zmax;
 }
@@ -1266,8 +1275,8 @@ DrawSpan(RNFlags draw_flags) const
   span.Draw();
 
   // Draw spheres
-  R3Sphere(span.Start(), 0.1).Draw();  
-  R3Sphere(span.End(), 0.1).Draw();  
+  R3Sphere(span.Start(), 0.1).Draw();
+  R3Sphere(span.End(), 0.1).Draw();
 }
 
 
@@ -1283,7 +1292,7 @@ DrawLabel(RNFlags draw_flags) const
 }
 
 
-  
+
 ////////////////////////////////////////////////////////////////////////
 // LEVEL MEMBER FUNCTIONS
 ////////////////////////////////////////////////////////////////////////
@@ -1295,7 +1304,7 @@ MPLevel(void)
     regions(),
     position(0,0,0),
     bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
-    label(NULL)  
+    label(NULL)
 {
 }
 
@@ -1376,7 +1385,7 @@ DrawPosition(RNFlags draw_flags) const
 }
 
 
- 
+
 void MPLevel::
 DrawBBox(RNFlags draw_flags) const
 {
@@ -1420,9 +1429,9 @@ MPHouse(const char *name, const char *label)
     rgbd(),
     scene(NULL),
     mesh(NULL),
-    bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),    
+    bbox(FLT_MAX, FLT_MAX, FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX),
     label((label) ? strdup(label) : NULL),
-    name((name) ? strdup(name) : NULL)    
+    name((name) ? strdup(name) : NULL)
 {
   // Set RGBD configuration parameters
   rgbd.SetDatasetFormat("matterport");
@@ -1842,7 +1851,7 @@ FindClosestImage(const R3Point& query_position, const R3Vector& query_normal,
     closest_image = image;
     closest_d = d;
   }
-  
+
   // Return closest image
   return closest_image;
 }
@@ -1866,7 +1875,7 @@ FindClosestVertex(const R3Point& query_position, const R3Vector& query_normal,
     closest_vertex = vertex;
     closest_d = d;
   }
-  
+
   // Return closest vertex
   return closest_vertex;
 }
@@ -1891,7 +1900,7 @@ FindClosestRegion(const R3Point& query_position, const R3Vector& query_normal,
     closest_region = region;
     closest_d = d;
   }
-  
+
   // Return closest region
   return closest_region;
 }
@@ -2096,7 +2105,7 @@ DrawMesh(RNFlags draw_flags) const
       mesh->DrawEdges();
     }
   }
-    
+
   // Draw vertices
   if (draw_flags[MP_DRAW_VERTICES]) {
     if (draw_flags[MP_COLOR_FOR_PICK]) {
@@ -2164,7 +2173,7 @@ DrawScene(RNFlags draw_flags) const
   // Draw faces
   if (draw_flags[MP_DRAW_FACES]) {
     glDisable(GL_LIGHTING);
-    glColor3d(1.0, 1.0, 1.0); 
+    glColor3d(1.0, 1.0, 1.0);
     scene->Draw(R3_DEFAULT_DRAW_FLAGS);
   }
 
@@ -2190,7 +2199,7 @@ ReadFile(const char *filename)
 
   // Read file
   if (!strcmp(file_type, "ASCII")) return ReadAsciiFile(filename);
-  else fprintf(stderr, "Unable to read file %s, unrecognized type: %s\n", filename, file_type); 
+  else fprintf(stderr, "Unable to read file %s, unrecognized type: %s\n", filename, file_type);
 
   // Unrecognized file type
   return 0;
@@ -2295,7 +2304,7 @@ ReadAsciiFile(const char *filename)
     level->bbox = box;
     InsertLevel(level);
   }
-    
+
   // Read regions
   for (int i = 0; i < nregions; i++) {
     fscanf(fp, "%s", cmd);
@@ -2319,7 +2328,7 @@ ReadAsciiFile(const char *filename)
       level->InsertRegion(region);
     }
   }
-    
+
   // Read portals
   for (int i = 0; i < nportals; i++) {
     int region0_index, region1_index;
@@ -2346,7 +2355,7 @@ ReadAsciiFile(const char *filename)
       region1->InsertPortal(portal, 1);
     }
   }
-    
+
   // Read surfaces
   for (int i = 0; i < nsurfaces; i++) {
     fscanf(fp, "%s", cmd);
@@ -2370,7 +2379,7 @@ ReadAsciiFile(const char *filename)
       region->InsertSurface(surface);
     }
   }
-    
+
   // Read vertices
   for (int i = 0; i < nvertices; i++) {
     fscanf(fp, "%s", cmd);
@@ -2473,7 +2482,7 @@ ReadAsciiFile(const char *filename)
     if (strcmp(mpcat40_name, "-")) category->mpcat40_name = strdup(mpcat40_name);
     InsertCategory(category);
   }
-    
+
   // Read objects
   for (int i = 0; i < nobjects; i++) {
     R3Vector axis0, axis1, radius;
@@ -2500,7 +2509,7 @@ ReadAsciiFile(const char *filename)
       category->InsertObject(object);
     }
   }
-    
+
   // Read segments
   for (int i = 0; i < nsegments; i++) {
     fscanf(fp, "%s", cmd);
@@ -2523,7 +2532,7 @@ ReadAsciiFile(const char *filename)
       object->InsertSegment(segment);
     }
   }
-    
+
   // Close file
   fclose(fp);
 
@@ -2575,7 +2584,7 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 5; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Write regions
   for (int i = 0; i < regions.NEntries(); i++) {
     MPRegion *region = regions.Kth(i);
@@ -2591,7 +2600,7 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 4; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Write portals
   for (int i = 0; i < portals.NEntries(); i++) {
     MPPortal *portal = portals.Kth(i);
@@ -2605,7 +2614,7 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 4; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Write surfaces
   for (int i = 0; i < surfaces.NEntries(); i++) {
     MPSurface *surface = surfaces.Kth(i);
@@ -2619,7 +2628,7 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 5; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Write vertices
   for (int i = 0; i < surfaces.NEntries(); i++) {
     MPSurface *surface = surfaces.Kth(i);
@@ -2681,7 +2690,7 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 5; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Write objects
   for (int i = 0; i < objects.NEntries(); i++) {
     MPObject *object = objects.Kth(i);
@@ -2696,7 +2705,7 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 8; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Write segments
   for (int i = 0; i < segments.NEntries(); i++) {
     MPSegment *segment = segments.Kth(i);
@@ -2710,10 +2719,10 @@ WriteAsciiFile(const char *filename) const
     for (int j = 0; j < 5; j++) fprintf(fp, "0 ");
     fprintf(fp, "\n");
   }
-    
+
   // Close file
   fclose(fp);
-  
+
   // Return success
   return 1;
 }
@@ -2825,7 +2834,7 @@ ReadCategoryFile(const char *filename)
       *(token++) = '\0';
     }
   }
-  
+
   // Extract indices of interesting info
   int label_id_k = -1;
   int label_name_k = -1;
@@ -2833,9 +2842,9 @@ ReadCategoryFile(const char *filename)
   int mpcat40_name_k = -1;
   for (int i = 0; i < keys.NEntries(); i++) {
     if (!strcmp(keys[i], "index")) label_id_k = i;
-    else if (!strcmp(keys[i], "raw_category")) label_name_k = i; 
-    else if (!strcmp(keys[i], "mpcat40index")) mpcat40_id_k = i; 
-    else if (!strcmp(keys[i], "mpcat40")) mpcat40_name_k = i; 
+    else if (!strcmp(keys[i], "raw_category")) label_name_k = i;
+    else if (!strcmp(keys[i], "mpcat40index")) mpcat40_id_k = i;
+    else if (!strcmp(keys[i], "mpcat40")) mpcat40_name_k = i;
   }
 
   // Check if found key fields in header
@@ -2867,7 +2876,7 @@ ReadCategoryFile(const char *filename)
     // Insert category
     InsertCategory(category);
   }
-  
+
   // Close file
   fclose(fp);
 
@@ -2894,7 +2903,7 @@ ReadSegmentFile(const char *filename)
     return 0;
   }
 
-  // Read file 
+  // Read file
   std::string text;
   fseek(fp, 0, SEEK_END);
   long const size = ftell(fp);
@@ -2946,7 +2955,7 @@ ReadSegmentFile(const char *filename)
       segment->position = segment->bbox.Centroid();
     }
   }
-  
+
   // Return success
   return 1;
 }
@@ -2963,7 +2972,7 @@ ReadObjectFile(const char *filename)
     return 0;
   }
 
-  // Read file 
+  // Read file
   std::string text;
   fseek(fp, 0, SEEK_END);
   long const size = ftell(fp);
@@ -2985,14 +2994,14 @@ ReadObjectFile(const char *filename)
     id_to_category.Insert(category->label_id, category);
     name_to_category.Insert(category->label_name, category);
   }
-  
+
   // Create a map to find segments
   RNMap<int, MPSegment *> id_to_segment;
   for (int i = 0; i < segments.NEntries(); i++) {
     MPSegment *segment = segments.Kth(i);
     id_to_segment.Insert(segment->id, segment);
   }
-  
+
   // Parse file
   Json::Value json_root;
   Json::Reader json_reader;
@@ -3045,7 +3054,7 @@ ReadObjectFile(const char *filename)
         }
       }
     }
-  
+
     // Parse obb
     if (json_group.isMember("obb")) {
       Json::Value json_obb = json_group["obb"];
@@ -3145,7 +3154,7 @@ ReadObjectFile(const char *filename)
 
 
 int MPHouse::
-ReadConfigurationFile(const char *filename) 
+ReadConfigurationFile(const char *filename)
 {
   // Read file
   RGBDConfiguration configuration;
@@ -3160,7 +3169,7 @@ ReadConfigurationFile(const char *filename)
     R3Point viewpoint = image->WorldViewpoint();
     int width = (image->NPixels(RN_X) > 0) ? image->NPixels(RN_X) : 1280;
     int height = (image->NPixels(RN_Y) > 0) ? image->NPixels(RN_Y) : 1024;
-    
+
     // Get image name
     char image_name_buffer[4096];
     strncpy(image_name_buffer, image->DepthFilename(), 4096);
@@ -3171,7 +3180,7 @@ ReadConfigurationFile(const char *filename)
     if (yaw_index) { *yaw_index = '\0'; yaw_index++; }
     char *ext_index = strchr(yaw_index, '.');
     if (ext_index) { *ext_index = '\0'; ext_index++; }
-    
+
     // Create image
     MPImage *img = new MPImage();
     img->name = (name && strcmp(name, "-")) ? strdup(name) : NULL;
@@ -3225,13 +3234,10 @@ ReadConfigurationFile(const char *filename)
       if (region) region->InsertPanorama(panorama);
     }
   }
-  
+
   // Update bbox
   bbox.Union(configuration.WorldBBox());
 
   // Return success
   return 1;
 }
-
-
-
