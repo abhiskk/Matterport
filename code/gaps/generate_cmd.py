@@ -73,8 +73,7 @@ def main():
         f.write("#!/bin/sh\n\n")
         f.write("DATA_DIR=/datasets01/mp3d/073118/v1/scans/\n")
         f.write("OUT_DIR=/private/home/akadian/Matterport/code/gaps/out_dir\n")
-        f.write("""METADATA=/private/home/akadian\
-            /Matterport/metadata/category_mapping.tsv\n\n""")
+        f.write("""METADATA=/private/home/akadian/Matterport/metadata/category_mapping.tsv\n\n""")
         hids = os.listdir("/datasets01/mp3d/073118/v1/scans")
         print("Number of houses: {}".format(len(hids)))
         for hid in hids:
