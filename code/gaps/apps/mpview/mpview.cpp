@@ -875,7 +875,7 @@ void GLUTRedraw(void)
     glReadPixels(0, 0, GLUTwindow_width, GLUTwindow_height, FORMAT, GL_UNSIGNED_BYTE, pixels);
     create_ppm(output_ppm_filename, GLUTwindow_width, GLUTwindow_height, 255, FORMAT_NBYTES, pixels);
   }
-  // exit(1);
+  exit(1);
 }
 
 
