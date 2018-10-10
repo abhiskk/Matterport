@@ -23,8 +23,7 @@ DELTA = 0.5
 PIXELS_PER_METER = 50
 COL_LEVEL = 2
 COL_LABEL = 5
-COL_ZLO = 11
-COL_ZHI = 14
+COL_ZPOS = 8
 DATA_DIR = "/home/peter/Datasets/matterport/v1/unzipped_scans/"
 OUT_DIR = "../../renders"
 
@@ -47,32 +46,25 @@ def get_dimensions(hid):
 
 
 def z_levels(input_house):
+    levels = []
     with open(input_house) as f:
         lines = f.readlines()
-        lines = [line for line in lines if line[0] == 'R']
-    regions = [line.strip().split() for line in lines]
-    los = {}
-    his = {}
-    for r in regions:
-        ind_level = int(r[COL_LEVEL])
-        label = r[COL_LABEL]
-        #if label == 's':
-        #    continue # skip stairs since they join levels and may be confusing
-        z_lo = float(r[COL_ZLO])
-        z_hi = float(r[COL_ZHI])
-        if ind_level not in los:
-            u = z_lo
-            v = z_hi
-        else:
-            u = min(los[ind_level], z_lo)
-            v = max(his[ind_level], z_hi)
-        los[ind_level] = u
-        his[ind_level] = v
-    levels = sorted(list(los.keys()))
-    res = dict()
-    for l in levels:
-        res[l] = (los[l], his[l])
-    return res
+        expected_level_count = len([line for line in lines if line[0] == 'L'])
+        lines = [line.strip().split() for line in lines if line[0] == 'R']
+        # Skip hallway and stairs, which appear awkwardly between levels in a house
+        z_los = sorted([float(item[COL_ZPOS]) for item in lines if item[COL_LABEL] not in ['h','s']])
+        curr = z_los[0]
+        levels.append(curr)
+        for z in z_los:
+            if z < curr + 1.0:
+                continue
+            else:
+                curr = z
+                levels.append(curr)
+    if len(levels) != expected_level_count:
+        print input_house
+        print '%d vs %d (expected)' % (len(levels), expected_level_count)
+    return levels
 
 
 def generate_render_config():
@@ -81,26 +73,23 @@ def generate_render_config():
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        hids = os.listdir(DATA_DIR)
+        hids = sorted(os.listdir(DATA_DIR))
         print("Number of houses: {}".format(len(hids)))
         for hid in hids:
             if hid == 'sens':
                 continue
 
             # calculate z clipping planes
-            z_clips = z_levels("{}{}/house_segmentations/{}.house".format(DATA_DIR, hid, hid))
+            levels = z_levels("{}{}/house_segmentations/{}.house".format(DATA_DIR, hid, hid))
             w, h = get_dimensions(hid)
-            for lev in range(len(z_clips)):
-                try:
-                    writer.writerow({'scanId': hid, 
-                                     'level': lev,
-                                     'z_low': "%.2f" % round(z_clips[lev][0] - 0.1, 2),
-                                     'z_high': "%.2f" % round(z_clips[lev][0] + 1.5, 2),
-                                     'width': w,
-                                     'height': h
-                                    })
-                except:
-                     pass
+            for i,z in enumerate(levels):
+                writer.writerow({'scanId': hid, 
+                                 'level': i,
+                                 'z_low': "%.2f" % round(z - 0.2, 2),
+                                 'z_high': "%.2f" % round(z + 1.5, 2),
+                                 'width': w,
+                                 'height': h
+                                })
 
 
 
@@ -111,7 +100,7 @@ def render_semantic_maps():
             with open("render_semantic_maps.sh", "w") as f:
                 f.write("#!/bin/sh\n\n")
                 f.write("DATA_DIR={}\n".format(DATA_DIR))
-                f.write("OUT_DIR={}\n".format(DATA_DIR))
+                f.write("OUT_DIR={}\n".format(OUT_DIR))
                 f.write("""METADATA=../../metadata/category_mapping.tsv\n\n""")
                 f.write("HID={}\n".format(row['scanId']))
                 f.write("WIDTH={}\n".format(row['width']))
@@ -123,11 +112,10 @@ def render_semantic_maps():
                 f.write("\n\n")
                 print("Running house {}\n".format(row['scanId']))
             os.system("sh render_semantic_maps.sh")
-            return
 
 
 if __name__ == "__main__":
-    #generate_render_config()
-    render_semantic_maps()
+    generate_render_config()
+    #render_semantic_maps()
 
 
